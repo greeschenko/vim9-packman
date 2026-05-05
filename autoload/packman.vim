@@ -69,7 +69,7 @@ enddef
 # Job callbacks (must be global for job_start to access)
 # --------------------------------------------
 
-def JobExit(job: job, status: number): void
+export def JobExit(job: job, status: number): void
   g:packman_pending_jobs -= 1
 
   if status != 0
@@ -109,7 +109,7 @@ enddef
 # Install plugins (parallel)
 # --------------------------------------------
 
-def PackmanInstall(plugins: list<string> = g:packman_plugins): void
+export def PackmanInstall(plugins: list<string> = g:packman_plugins): void
   CheckGit()
   EnsurePluginDir()
   LockfileRead()
@@ -149,7 +149,7 @@ enddef
 # Install plugins (synchronous - blocks until done)
 # --------------------------------------------
 
-def PackmanInstallSync(plugins: list<string> = g:packman_plugins): void
+export def PackmanInstallSync(plugins: list<string> = g:packman_plugins): void
   CheckGit()
   EnsurePluginDir()
   LockfileRead()
@@ -187,7 +187,7 @@ enddef
 # Update plugins (parallel)
 # --------------------------------------------
 
-def PackmanUpdate(plugins: list<string> = g:packman_plugins): void
+export def PackmanUpdate(plugins: list<string> = g:packman_plugins): void
   CheckGit()
   LockfileRead()
 
@@ -223,7 +223,7 @@ def PackmanUpdate(plugins: list<string> = g:packman_plugins): void
   timer_start(100, function('packman#UpdateLockfile'))
 enddef
 
-def UpdateLockfile(timer: number): void
+export def UpdateLockfile(timer: number): void
   if g:packman_pending_jobs > 0
     timer_start(100, function('s:UpdateLockfile'))
     return
@@ -244,7 +244,7 @@ enddef
 # Clean unused plugins
 # --------------------------------------------
 
-def PackmanClean(): void
+export def PackmanClean(): void
   if !isdirectory(g:packman_plugin_dir)
     return
   endif
@@ -276,7 +276,7 @@ enddef
 # Show plugin status
 # --------------------------------------------
 
-def PackmanStatus(): void
+export def PackmanStatus(): void
   LockfileRead()
 
   echo printf('%-40s %-10s %s', 'Plugin', 'Status', 'Commit')
@@ -307,7 +307,7 @@ enddef
 # Generate/update lockfile
 # --------------------------------------------
 
-def PackmanLock(): void
+export def PackmanLock(): void
   LockfileRead()
 
   for repo in g:packman_plugins
