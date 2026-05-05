@@ -1,0 +1,72 @@
+*packman.txt*  Vim9script Package Manager
+
+Author:  greeschenko
+Version: 1.0
+
+==============================================================================
+CONTENTS                                            *packman-contents*
+
+1. Introduction ........................ |packman-intro|
+2. Configuration ....................... |packman-config|
+3. Commands ............................ |packman-commands|
+4. Lockfile ............................ |packman-lockfile|
+
+==============================================================================
+INTRODUCTION                                            *packman-intro*
+
+vim9-packman is a minimal, fast Vim9script package manager with parallel
+git operations. It uses Vim's built-in |job_start()| API for async installs
+and updates, reinitializing the plugin system after all jobs complete.
+
+==============================================================================
+CONFIGURATION                                          *packman-config*
+
+Add the bootstrap snippet to the top of your |.vimrc|:
+
+>
+vim9script
+const P = expand('~/.vim/pack/plugins/opt/vim9-packman')
+if !isdirectory(P) && executable('git')
+  mkdir(fnamemodify(P, ':h'), 'p')
+  if system('git clone --depth 1 ' .. shellescape('https://github.com/greeschenko/vim9-packman.git') .. ' ' .. shellescape(P)) == 0
+    execute 'set runtimepath+=' .. escape(P, ' ,')
+    execute 'packadd vim9-packman'
+  endif
+endif
+<
+
+Then configure your plugins after the bootstrap:
+>
+g:packman_plugins = [
+  'greeschenko/vim9-packman',
+  'user/repo',
+  ...
+]
+g:packman_plugin_dir = expand('~/.vim/pack/plugins/opt')
+g:packman_auto_install = v:true
+g:packman_lockfile = expand('~/.vim/packman.lock')
+<
+
+==============================================================================
+COMMANDS                                              *packman-commands*
+
+|:PackmanInstall|  Install all/missing/specified plugins (parallel)
+|:PackmanUpdate|   Update all/specified plugins (parallel, updates lockfile)
+|:PackmanClean|    Remove plugins not in g:packman_plugins
+|:PackmanStatus|   Show plugin state (installed/outdated/missing)
+|:PackmanLock|     Generate/update lockfile with current commit hashes
+
+==============================================================================
+LOCKFILE                                              *packman-lockfile*
+
+The lockfile is a Vim-script file that pins plugins to exact commits for
+reproducible installs. It is updated automatically on |:PackmanUpdate| or
+manually with |:PackmanLock|.
+
+Example lockfile:
+>
+vim9script
+g:packman_lock = {
+  'user/repo': 'a1b2c3d4e5f6',
+}
+<
