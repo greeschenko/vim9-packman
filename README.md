@@ -66,7 +66,8 @@ All commands use the `Packman` prefix:
 
 | Command | Description |
 |---------|-------------|
-| `:PackmanInstall [plugin...]` | Install all/missing/specified plugins (parallel) |
+| `:PackmanInstall [plugin...]` | Install all/missing/specified plugins (parallel, async) |
+| `:PackmanInstallSync [plugin...]` | Install all/missing/specified plugins (sequential, blocks vimrc) |
 | `:PackmanUpdate [plugin...]` | Update all/specified plugins (parallel, updates lockfile) |
 | `:PackmanClean` | Remove plugins not in `g:packman_plugins` |
 | `:PackmanStatus` | Show plugin state (installed/outdated/missing/commit) |
@@ -74,18 +75,18 @@ All commands use the `Packman` prefix:
 
 ## Synchronous Install (Block Vimrc Until Plugins Are Installed)
 
-By default, `:PackmanInstall` uses parallel async git clones and returns immediately. If you need to block vimrc execution until all plugins are installed (useful for plugin-specific configuration that must run after plugins load), use the `sync` parameter:
+By default, `:PackmanInstall` uses parallel async git clones and returns immediately. If you need to block vimrc execution until all plugins are installed (useful for plugin-specific configuration that must run after plugins load), use `PackmanInstallSync`:
 
 ```vim
 # In vimrc, after bootstrap and g:packman_plugins definition:
 g:packman_auto_install = v:false  " Disable async auto-install
-packman#PackmanInstall(sync: v:true)  " Blocks until all plugins are installed
+packman#PackmanInstallSync()  " Blocks until all plugins are installed
 
 # Plugin-specific configuration below - plugins are now guaranteed to exist
 # e.g., LSP settings, ollama config, etc.
 ```
 
-**When to use sync mode:**
+**When to use `PackmanInstallSync`:**
 - You have plugin-specific settings in vimrc that error out if the plugin isn't installed yet
 - You want all plugins loaded before the rest of your vimrc runs
 - You don't mind blocking Vim startup briefly on first install

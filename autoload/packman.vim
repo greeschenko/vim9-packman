@@ -109,7 +109,7 @@ enddef
 # Install plugins (parallel)
 # --------------------------------------------
 
-def PackmanInstall(plugins: list<string> = g:packman_plugins, sync: bool = v:false): void
+def PackmanInstall(plugins: list<string> = g:packman_plugins): void
   CheckGit()
   EnsurePluginDir()
   LockfileRead()
@@ -128,37 +128,59 @@ def PackmanInstall(plugins: list<string> = g:packman_plugins, sync: bool = v:fal
     return
   endif
 
-  if sync
-    for repo in to_install
-      var url = GitUrl(repo)
-      var path = PluginPath(repo)
-      var cmd = 'git clone --depth 1 ' .. shellescape(url) .. ' ' .. shellescape(path)
-      echom 'packman: installing ' .. repo
-      system(cmd)
-      if v:shell_error != 0
-        echohl ErrorMsg
-        echom 'packman: failed to install ' .. repo
-        echohl None
-      endif
-    endfor
+  for repo in to_install
+    var url = GitUrl(repo)
+    var path = PluginPath(repo)
+    var cmd = 'git clone --depth 1 ' .. shellescape(url) .. ' ' .. shellescape(path)
+
+    g:packman_pending_jobs += 1
+    echom 'packman: installing ' .. repo
+
+    job_start(cmd, {
+      exit_cb: function('packman#JobExit'),
+      in_io: 'null',
+      out_io: 'null',
+      err_io: 'null',
+    })
+  endfor
+enddef
+
+# --------------------------------------------
+# Install plugins (synchronous - blocks until done)
+# --------------------------------------------
+
+def PackmanInstallSync(plugins: list<string> = g:packman_plugins): void
+  CheckGit()
+  EnsurePluginDir()
+  LockfileRead()
+
+  var to_install: list<string> = []
+  for repo in plugins
+    var path = PluginPath(repo)
+    if !isdirectory(path)
+      to_install->add(repo)
+    endif
+  endfor
+
+  if to_install->empty()
+    echom 'packman: all plugins already installed'
     Reinit()
-  else
-    for repo in to_install
-      var url = GitUrl(repo)
-      var path = PluginPath(repo)
-      var cmd = 'git clone --depth 1 ' .. shellescape(url) .. ' ' .. shellescape(path)
-
-      g:packman_pending_jobs += 1
-      echom 'packman: installing ' .. repo
-
-      job_start(cmd, {
-        exit_cb: function('packman#JobExit'),
-        in_io: 'null',
-        out_io: 'null',
-        err_io: 'null',
-      })
-    endfor
+    return
   endif
+
+  for repo in to_install
+    var url = GitUrl(repo)
+    var path = PluginPath(repo)
+    var cmd = 'git clone --depth 1 ' .. shellescape(url) .. ' ' .. shellescape(path)
+    echom 'packman: installing ' .. repo
+    system(cmd)
+    if v:shell_error != 0
+      echohl ErrorMsg
+      echom 'packman: failed to install ' .. repo
+      echohl None
+    endif
+  endfor
+  Reinit()
 enddef
 
 # --------------------------------------------

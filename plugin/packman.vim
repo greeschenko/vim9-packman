@@ -26,6 +26,7 @@ endif
 # --------------------------------------------
 
 command! -nargs=* -bar PackmanInstall call packman#PackmanInstall(<f-args>)
+command! -nargs=* -bar PackmanInstallSync call packman#PackmanInstallSync(<f-args>)
 command! -nargs=* -bar PackmanUpdate call packman#PackmanUpdate(<f-args>)
 command! -nargs=0 -bar PackmanClean call packman#PackmanClean()
 command! -nargs=0 -bar PackmanStatus call packman#PackmanStatus()
