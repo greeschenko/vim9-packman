@@ -71,13 +71,13 @@ def ShowNotifications(timer: number): void
 
     var opts: dict<any> = {
       line: 1,
-      col: &columns - max_width - 6,
+      col: &columns - max_width - 3,
       minwidth: max_width + 2,
       minheight: text->len(),
-      pos: 'topright',
       time: 5000,  # Auto-close after 5 seconds
       border: [],
-      highlight: 'Normal',
+      borderchars: ['─', '│', '─', '│', '╭', '╮', '╯', '╰'],
+      highlight: 'Comment',
     }
 
     popup_create(text, opts)
