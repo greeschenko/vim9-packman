@@ -15,42 +15,48 @@ CONTENTS                                            *packman-contents*
 INTRODUCTION                                            *packman-intro*
 
 vim9-packman is a minimal, fast Vim9script package manager with parallel
-git operations. It uses Vim's built-in |job_start()| API for async installs
-and updates, reinitializing the plugin system after all jobs complete.
+git operations. It uses Vim's built-in |job_start()| API for async
+updates, and provides |:PackmanInit| for synchronous init that blocks
+vimrc until plugins are installed and loaded.
 
 ==============================================================================
 CONFIGURATION                                          *packman-config*
-
+ 
 Add the bootstrap snippet to the top of your |.vimrc|:
 
 >
-vim9script
+# vim9-packman auto initialization
 const P = expand('~/.vim/pack/plugins/opt/vim9-packman')
 if !isdirectory(P) && executable('git')
-  mkdir(fnamemodify(P, ':h'), 'p')
-  if system('git clone --depth 1 ' .. shellescape('https://github.com/greeschenko/vim9-packman.git') .. ' ' .. shellescape(P)) == 0
-    execute 'set runtimepath+=' .. escape(P, ' ,')
-    execute 'packadd vim9-packman'
-  endif
+  mkdir(P, 'p')
+  system('git clone --depth 1 ' .. shellescape('https://github.com/greeschenko/vim9-packman.git') .. ' ' .. shellescape(P))
 endif
+
+execute 'packadd vim9-packman'
 <
 
 Then configure your plugins after the bootstrap:
 >
+# Plugin list (supports "user/repo" format)
 g:packman_plugins = [
   'greeschenko/vim9-packman',
   'user/repo',
   ...
 ]
-g:packman_plugin_dir = expand('~/.vim/pack/plugins/opt')
-g:packman_auto_install = v:true
-g:packman_lockfile = expand('~/.vim/packman.lock')
+
+# Sync init: install missing + load plugins (blocks vimrc)
+packman#PackmanInit()
 <
+
+**Note:** All other options (g:packman_plugin_dir, g:packman_lockfile, etc.) are
+optional and have sensible defaults.
 
 ==============================================================================
 COMMANDS                                              *packman-commands*
 
+|:PackmanInit|    Sync init: install missing + load plugins (blocks vimrc)
 |:PackmanInstall|  Install all/missing/specified plugins (parallel)
+|:PackmanInstallSync|  Deprecated: use |:PackmanInit| instead
 |:PackmanUpdate|   Update all/specified plugins (parallel, updates lockfile)
 |:PackmanClean|    Remove plugins not in g:packman_plugins
 |:PackmanStatus|   Show plugin state (installed/outdated/missing)

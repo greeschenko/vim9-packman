@@ -1,19 +1,24 @@
 # vim9-packman
 A minimal, fast Vim9script package manager with parallel git operations.
 
+## Aim
+
+The aim of vim9-packman is to provide the possibility to have a **minimal vimrc** and automatically deploy your entire Vim working environment on the first start. Just define your plugin list, add the bootstrap snippet, and vim9-packman will:
+
+- Install all missing plugins synchronously on first run
+- Load all plugins before your vimrc continues executing
+- Allow plugin-specific configuration immediately after `packman#PackmanInit()`
+- Work identically across machines with the same vimrc
+
 ## Features
 - Parallel plugin install/update via Vim's `job_start()` API
-- Automatic Vim reinitialization (`packloadall!` + `packadd`) after all jobs complete
+- Synchronous init function (`PackmanInit`) to block vimrc until plugins are installed and loaded
 - Vim-script lockfile for reproducible plugin installs
-- Auto-install missing plugins on startup
-- Clean removal of unused plugins
 - Plugin status overview (installed/outdated/missing)
 
 ## Installation
 
 ### Step 1: Remove old plugin code from `~/.vimrc`
-
-Remove any old plugin management functions like `CheckGit()`, `InstallPlugin()`, `UpdatePlugin()`, `LoadPlugin()`, `SetupPlugins()`, `UpdatePlugins()` and commands like `PluginsInstall`, `PluginsUpdate`.
 
 ### Step 2: Add bootstrap snippet
 
@@ -21,6 +26,16 @@ Add this bootstrap snippet to the **very top** of your `~/.vimrc` (before any ot
 
 ```vim
 vim9script
+
+# Plugin list (supports "user/repo" format)
+g:packman_plugins = [
+  'greeschenko/vim9-packman',  # Self-update support
+  'greeschenko/cyberpunk99.vim',
+  'yegappan/lsp',
+  #...
+]
+
+# vim9-packman auto initialization
 const P = expand('~/.vim/pack/plugins/opt/vim9-packman')
 if !isdirectory(P) && executable('git')
   mkdir(P, 'p')
@@ -28,37 +43,13 @@ if !isdirectory(P) && executable('git')
 endif
 
 execute 'packadd vim9-packman'
+packman#PackmanInit()
 ```
+**Note:** All other options (`g:packman_plugin_dir`, `g:packman_lockfile`, etc.) are optional and have sensible defaults.
 
-This handles first-time install on fresh systems and always loads vim9-packman on subsequent starts.
+### Step 3: Restart Vim
 
-### Step 3: Add configuration after bootstrap
-
-Add your plugin list and settings **after the bootstrap** in `~/.vimrc`:
-
-```vim
-# Plugin list (supports "user/repo" format)
-g:packman_plugins = [
-  'greeschenko/vim9-packman',  # Self-update support
-  'greeschenko/cyberpunk99.vim',
-  'yegappan/lsp',
-  'greeschenko/vim9-fuzzy',
-  # Add more plugins here...
-]
-
-# Directory where plugins are stored
-g:packman_plugin_dir = expand('~/.vim/pack/plugins/opt')
-
-# Auto-install missing plugins on startup
-g:packman_auto_install = v:true
-
-# Lockfile path (Vim-script format)
-g:packman_lockfile = expand('~/.vim/packman.lock')
-```
-
-### Step 4: Restart Vim
-
-Save your `~/.vimrc` and restart Vim. Plugins will be installed automatically on startup.
+Save your `~/.vimrc` and restart Vim. Plugins will be installed and loaded automatically.
 
 ## Commands
 All commands use the `Packman` prefix:
@@ -72,47 +63,6 @@ All commands use the `Packman` prefix:
 | `:PackmanClean` | Remove plugins not in `g:packman_plugins` |
 | `:PackmanStatus` | Show plugin state (installed/outdated/missing/commit) |
 | `:PackmanLock` | Generate/update lockfile with current commit hashes |
-
-## Sync Init (Block Vimrc Until Plugins Are Installed)
-
-Use `PackmanInit()` to synchronously install missing plugins and load all plugins. This blocks vimrc execution until complete, ensuring plugins are available for subsequent configuration:
-
-```vim
-# Complete vimrc example with sync init:
-vim9script
-
-g:mapleader = ' '
-g:maplocalleader = ','
-
-# Bootstrap vim9-packman (install if missing, always load)
-const P = expand('~/.vim/pack/plugins/opt/vim9-packman')
-if !isdirectory(P) && executable('git')
-  mkdir(P, 'p')
-  system('git clone --depth 1 ' .. shellescape('https://github.com/greeschenko/vim9-packman.git') .. ' ' .. shellescape(P))
-endif
-
-execute 'packadd vim9-packman'
-
-# Plugin manager config
-g:packman_plugin_dir = expand('~/.vim/pack/plugins/opt')
-g:packman_lockfile = expand('~/.vim/packman.lock')
-g:packman_plugins = [
-  'greeschenko/vim9-packman',
-  'greeschenko/cyberpunk99.vim',
-  'yegappan/lsp',
-  'greeschenko/vim9-fuzzy',
-  'greeschenko/vim9-ollama',
-  'greeschenko/vimsidian',
-]
-
-# Block until all plugins are installed and loaded
-packman#PackmanInit()
-
-# Plugin-specific configuration below - plugins are now guaranteed to exist
-# e.g., LSP settings, ollama config, etc.
-```
-
-**Note:** `PackmanInstallSync()` is deprecated. Use `PackmanInit()` instead.
 
 **Package management commands (manual use):**
 - `:PackmanUpdate` - Update plugins (async, manual only)
