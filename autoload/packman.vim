@@ -76,9 +76,8 @@ def ShowNotifications(timer: number): void
       minheight: text->len(),
       pos: 'topright',
       time: 5000,  # Auto-close after 5 seconds
-      border: 'single',
+      border: [],
       highlight: 'Normal',
-      borderhighlight: ['Title'],
     }
 
     popup_create(text, opts)
