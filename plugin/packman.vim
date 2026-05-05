@@ -25,17 +25,10 @@ endif
 # User commands
 # --------------------------------------------
 
+command! -nargs=* -bar PackmanInit call packman#PackmanInit(<f-args>)
 command! -nargs=* -bar PackmanInstall call packman#PackmanInstall(<f-args>)
 command! -nargs=* -bar PackmanInstallSync call packman#PackmanInstallSync(<f-args>)
 command! -nargs=* -bar PackmanUpdate call packman#PackmanUpdate(<f-args>)
 command! -nargs=0 -bar PackmanClean call packman#PackmanClean()
 command! -nargs=0 -bar PackmanStatus call packman#PackmanStatus()
 command! -nargs=0 -bar PackmanLock call packman#PackmanLock()
-
-# --------------------------------------------
-# Auto-install on startup
-# --------------------------------------------
-
-if g:packman_auto_install
-  autocmd VimEnter * ++once call packman#PackmanInstall()
-endif

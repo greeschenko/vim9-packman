@@ -65,19 +65,20 @@ All commands use the `Packman` prefix:
 
 | Command | Description |
 |---------|-------------|
+| `:PackmanInit [plugin...]` | Sync init: install missing + load plugins (blocks vimrc) |
 | `:PackmanInstall [plugin...]` | Install all/missing/specified plugins (parallel, async) |
-| `:PackmanInstallSync [plugin...]` | Install all/missing/specified plugins (sequential, blocks vimrc) |
+| `:PackmanInstallSync [plugin...]` | Deprecated: use PackmanInit instead |
 | `:PackmanUpdate [plugin...]` | Update all/specified plugins (parallel, updates lockfile) |
 | `:PackmanClean` | Remove plugins not in `g:packman_plugins` |
 | `:PackmanStatus` | Show plugin state (installed/outdated/missing/commit) |
 | `:PackmanLock` | Generate/update lockfile with current commit hashes |
 
-## Synchronous Install (Block Vimrc Until Plugins Are Installed)
+## Sync Init (Block Vimrc Until Plugins Are Installed)
 
-By default, `:PackmanInstall` uses parallel async git clones and returns immediately. If you need to block vimrc execution until all plugins are installed (useful for plugin-specific configuration that must run after plugins load), use `PackmanInstallSync`:
+Use `PackmanInit()` to synchronously install missing plugins and load all plugins. This blocks vimrc execution until complete, ensuring plugins are available for subsequent configuration:
 
 ```vim
-# Complete vimrc example with sync install:
+# Complete vimrc example with sync init:
 vim9script
 
 g:mapleader = ' '
@@ -104,22 +105,20 @@ g:packman_plugins = [
   'greeschenko/vimsidian',
 ]
 
-# Block until all plugins are installed, then load them
-g:packman_auto_install = v:false
-packman#PackmanInstallSync()
+# Block until all plugins are installed and loaded
+packman#PackmanInit()
 
 # Plugin-specific configuration below - plugins are now guaranteed to exist
 # e.g., LSP settings, ollama config, etc.
 ```
 
-**When to use `PackmanInstallSync`:**
-- You have plugin-specific settings in vimrc that error out if the plugin isn't installed yet
-- You want all plugins loaded before the rest of your vimrc runs
-- You don't mind blocking Vim startup briefly on first install
+**Note:** `PackmanInstallSync()` is deprecated. Use `PackmanInit()` instead.
 
-**When to use async mode (default):**
-- You use `g:packman_auto_install = v:true` and configure plugins via `VimEnter` autocmd
-- You prefer non-blocking startup
+**Package management commands (manual use):**
+- `:PackmanUpdate` - Update plugins (async, manual only)
+- `:PackmanClean` - Remove unused plugins
+- `:PackmanStatus` - Show plugin status
+- `:PackmanLock` - Generate/update lockfile
 
 ## Lockfile
 The lockfile (`~/.vim/packman.lock`) pins plugins to exact commits for reproducible environments. It is automatically updated when running `:PackmanUpdate` and can be manually generated with `:PackmanLock`.

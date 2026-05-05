@@ -146,10 +146,10 @@ export def PackmanInstall(plugins: list<string> = g:packman_plugins): void
 enddef
 
 # --------------------------------------------
-# Install plugins (synchronous - blocks until done)
+# Sync init: install missing plugins + load all plugins
 # --------------------------------------------
 
-export def PackmanInstallSync(plugins: list<string> = g:packman_plugins): void
+export def PackmanInit(plugins: list<string> = g:packman_plugins): void
   CheckGit()
   EnsurePluginDir()
   LockfileRead()
@@ -181,6 +181,17 @@ export def PackmanInstallSync(plugins: list<string> = g:packman_plugins): void
     endif
   endfor
   Reinit()
+enddef
+
+# --------------------------------------------
+# Deprecated: use PackmanInit() instead
+# --------------------------------------------
+
+export def PackmanInstallSync(plugins: list<string> = g:packman_plugins): void
+  echohl WarningMsg
+  echom 'packman: PackmanInstallSync() is deprecated, use PackmanInit() instead'
+  echohl None
+  PackmanInit(plugins)
 enddef
 
 # --------------------------------------------
