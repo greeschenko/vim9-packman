@@ -37,6 +37,60 @@ def GitUrl(repo: string): string
 enddef
 
 # --------------------------------------------
+# Notifications (popup or message history)
+# --------------------------------------------
+
+var notifications: list<string> = []
+
+def Notify(msg: string): void
+  # Add to list for later display
+  notifications->add(msg)
+
+  # Schedule display after VimEnter if not already scheduled
+  if notifications->len() == 1
+    timer_start(100, function('ShowNotifications'))
+  endif
+enddef
+
+def ShowNotifications(timer: number): void
+  if notifications->empty()
+    return
+  endif
+
+  var text = notifications->copy()
+  notifications = []
+
+  # Create popup if Vim supports it
+  if exists('*popup_create')
+    var max_width = 0
+    for line in text
+      if line->strlen() > max_width
+        max_width = line->strlen()
+      endif
+    endfor
+
+    var opts: dict<any> = {
+      line: 1,
+      col: &columns - max_width - 6,
+      minwidth: max_width + 2,
+      minheight: text->len(),
+      pos: 'topright',
+      time: 5000,  # Auto-close after 5 seconds
+      border: [1,1,1,1],
+      highlight: 'Normal',
+      borderhighlight: ['Title'],
+    }
+
+    popup_create(text, opts)
+  else
+    # Fallback: use echomsg
+    for line in text
+      echomsg 'packman: ' .. line
+    endfor
+  endif
+enddef
+
+# --------------------------------------------
 # Lockfile
 # --------------------------------------------
 
@@ -72,12 +126,6 @@ enddef
 export def JobExit(job: job, status: number): void
   g:packman_pending_jobs -= 1
 
-  if status != 0
-    echohl ErrorMsg
-    echom 'packman: job failed (exit ' .. status .. ')'
-    echohl None
-  endif
-
   if g:packman_pending_jobs <= 0
     g:packman_pending_jobs = 0
     Reinit()
@@ -102,7 +150,7 @@ def Reinit(): void
   # Generate help tags for all pack plugins
   system('helptags ' .. shellescape(g:packman_plugin_dir .. '/*/doc'))
 
-  echom 'packman: plugins ready'
+  Notify('plugins ready')
 enddef
 
 # --------------------------------------------
@@ -123,7 +171,7 @@ export def PackmanInstall(plugins: list<string> = g:packman_plugins): void
   endfor
 
   if to_install->empty()
-    echom 'packman: all plugins already installed'
+    Notify('all plugins already installed')
     Reinit()
     return
   endif
@@ -132,10 +180,9 @@ export def PackmanInstall(plugins: list<string> = g:packman_plugins): void
     var url = GitUrl(repo)
     var path = PluginPath(repo)
     var cmd = 'git clone --depth 1 ' .. shellescape(url) .. ' ' .. shellescape(path)
-
+    Notify('installing ' .. repo)
     g:packman_pending_jobs += 1
-    echom 'packman: installing ' .. repo
-
+  
     job_start(cmd, {
       exit_cb: function('packman#JobExit'),
       in_io: 'null',
@@ -163,7 +210,7 @@ export def PackmanInit(plugins: list<string> = g:packman_plugins): void
   endfor
 
   if to_install->empty()
-    echom 'packman: all plugins already installed'
+    Notify('all plugins already installed')
     Reinit()
     return
   endif
@@ -172,12 +219,10 @@ export def PackmanInit(plugins: list<string> = g:packman_plugins): void
     var url = GitUrl(repo)
     var path = PluginPath(repo)
     var cmd = 'git clone --depth 1 ' .. shellescape(url) .. ' ' .. shellescape(path)
-    echom 'packman: installing ' .. repo
+    Notify('installing ' .. repo)
     system(cmd)
     if v:shell_error != 0
-      echohl ErrorMsg
-      echom 'packman: failed to install ' .. repo
-      echohl None
+      Notify('failed to install ' .. repo)
     endif
   endfor
   Reinit()
@@ -188,9 +233,6 @@ enddef
 # --------------------------------------------
 
 export def PackmanInstallSync(plugins: list<string> = g:packman_plugins): void
-  echohl WarningMsg
-  echom 'packman: PackmanInstallSync() is deprecated, use PackmanInit() instead'
-  echohl None
   PackmanInit(plugins)
 enddef
 
@@ -211,17 +253,16 @@ export def PackmanUpdate(plugins: list<string> = g:packman_plugins): void
   endfor
 
   if to_update->empty()
-    echom 'packman: no plugins to update'
+    Notify('no plugins to update')
     return
   endif
 
   for repo in to_update
     var path = PluginPath(repo)
     var cmd = 'git -C ' .. shellescape(path) .. ' pull --ff-only'
-
+    Notify('updating ' .. repo)
     g:packman_pending_jobs += 1
-    echom 'packman: updating ' .. repo
-
+  
     job_start(cmd, {
       exit_cb: function('packman#JobExit'),
       in_io: 'null',
@@ -248,7 +289,7 @@ export def UpdateLockfile(timer: number): void
   endfor
 
   LockfileWrite()
-  echom 'packman: lockfile updated'
+  Notify('lockfile updated')
 enddef
 
 # --------------------------------------------
@@ -270,16 +311,16 @@ export def PackmanClean(): void
   for dir in installed
     var name = fnamemodify(dir, ':t')
     if !allowed->has_key(name)
-      echom 'packman: removing ' .. name
+      Notify('removing ' .. name)
       delete(dir, 'rf')
       removed += 1
     endif
   endfor
 
   if removed == 0
-    echom 'packman: nothing to clean'
+    Notify('nothing to clean')
   else
-    echom 'packman: removed ' .. removed .. ' plugin(s)'
+    Notify('removed ' .. removed .. ' plugin(s)')
   endif
 enddef
 
@@ -329,5 +370,5 @@ export def PackmanLock(): void
   endfor
 
   LockfileWrite()
-  echom 'packman: lockfile written to ' .. g:packman_lockfile
+  Notify('lockfile written to ' .. g:packman_lockfile)
 enddef
