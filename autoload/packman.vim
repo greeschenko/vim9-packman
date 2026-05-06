@@ -103,16 +103,26 @@ export def PackmanInit(plugins: list<string> = g:packman_plugins): void
     return
   endif
 
-  for repo in to_install
+  var total = to_install->len()
+  for idx in range(total)
+    var repo = to_install[idx]
     var url = packman#git#GitUrl(repo)
     var path = packman#plugin#PluginPath(repo)
     var cmd = 'git clone --depth 1 ' .. shellescape(url) .. ' ' .. shellescape(path)
-    packman#notify#Notify('installing ' .. repo)
+    echo 'Packman: Installing ' .. (idx + 1) .. '/' .. total .. ': ' .. repo .. '...'
+    redraw
     system(cmd)
     if v:shell_error != 0
+      echo 'Packman: Failed ' .. (idx + 1) .. '/' .. total .. ': ' .. repo
       packman#notify#Notify('failed to install ' .. repo)
+    else
+      echo 'Packman: Installed ' .. (idx + 1) .. '/' .. total .. ': ' .. repo
     endif
+    redraw
   endfor
+
+  echo ''
+  redraw
   Reinit()
 enddef
 
