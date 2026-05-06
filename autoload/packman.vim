@@ -104,25 +104,52 @@ export def PackmanInit(plugins: list<string> = g:packman_plugins): void
   endif
 
   var total = to_install->len()
+  var successes: list<string> = []
+  var failures: list<string> = []
+
+  # Setup status line for progress
+  var saved_statusline = &statusline
+  var saved_laststatus = &laststatus
+  g:packman_status = 'Packman: Installing.'
+  &statusline = '%{g:packman_status}'
+  &laststatus = 2
+  redrawstatus!
+
   for idx in range(total)
     var repo = to_install[idx]
     var url = packman#git#GitUrl(repo)
     var path = packman#plugin#PluginPath(repo)
-    var cmd = 'git clone --depth 1 ' .. shellescape(url) .. ' ' .. shellescape(path)
-    echo 'Packman: Installing ' .. (idx + 1) .. '/' .. total .. ': ' .. repo .. '...'
-    redraw
+    var cmd = 'git clone --depth 1 ' .. shellescape(url) .. ' ' .. shellescape(path) .. ' >/dev/null 2>&1'
     system(cmd)
     if v:shell_error != 0
-      echo 'Packman: Failed ' .. (idx + 1) .. '/' .. total .. ': ' .. repo
-      packman#notify#Notify('failed to install ' .. repo)
+      failures->add(repo)
     else
-      echo 'Packman: Installed ' .. (idx + 1) .. '/' .. total .. ': ' .. repo
+      successes->add(repo)
     endif
-    redraw
+    g:packman_status ..= '.'
+    redrawstatus!
   endfor
 
-  echo ''
-  redraw
+  # Restore status line
+  &statusline = saved_statusline
+  &laststatus = saved_laststatus
+  unlet! g:packman_status
+  redrawstatus!
+
+  packman#notify#Notify('Packman: Installation Complete')
+  packman#notify#Notify('')
+  packman#notify#Notify('Success: ' .. successes->len())
+  for repo in successes
+    packman#notify#Notify('  ✓ ' .. repo)
+  endfor
+  if failures->len() > 0
+    packman#notify#Notify('')
+    packman#notify#Notify('Failed: ' .. failures->len())
+    for repo in failures
+      packman#notify#Notify('  ✗ ' .. repo)
+    endfor
+  endif
+
   Reinit()
 enddef
 
