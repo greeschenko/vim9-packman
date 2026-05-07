@@ -59,19 +59,19 @@ All commands use the `Packman` prefix:
 | `:PackmanInit [plugin...]` | Sync init: install missing + load plugins (blocks vimrc) |
 | `:PackmanInstall [plugin...]` | Install all/missing/specified plugins (parallel, async) |
 | `:PackmanInstallSync [plugin...]` | Deprecated: use PackmanInit instead |
-| `:PackmanUpdate [plugin...]` | Update all/specified plugins (parallel, updates lockfile) |
+| `:PackmanUpdate [plugin...]` | Update all/specified plugins (parallel, shows per-plugin result) |
 | `:PackmanClean` | Remove plugins not in `g:packman_plugins` |
 | `:PackmanStatus` | Show plugin state (installed/outdated/missing/commit) |
 | `:PackmanLock` | Generate/update lockfile with current commit hashes |
 
 **Package management commands (manual use):**
-- `:PackmanUpdate` - Update plugins (async, manual only)
+- `:PackmanUpdate` - Update plugins (async, shows per-plugin result)
 - `:PackmanClean` - Remove unused plugins
 - `:PackmanStatus` - Show plugin status
 - `:PackmanLock` - Generate/update lockfile
 
 ## Lockfile
-The lockfile (`~/.vim/packman.lock`) pins plugins to exact commits for reproducible environments. It is automatically updated when running `:PackmanUpdate` and can be manually generated with `:PackmanLock`.
+The lockfile (`~/.vim/packman.lock`) pins plugins to exact commits for reproducible environments. It is automatically updated after `:PackmanUpdate` completes and can be manually generated with `:PackmanLock`.
 
 Example lockfile:
 ```vim

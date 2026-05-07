@@ -57,7 +57,7 @@ COMMANDS                                              *packman-commands*
 |:PackmanInit|    Sync init: install missing + load plugins (blocks vimrc)
 |:PackmanInstall|  Install all/missing/specified plugins (parallel)
 |:PackmanInstallSync|  Deprecated: use |:PackmanInit| instead
-|:PackmanUpdate|   Update all/specified plugins (parallel, updates lockfile)
+|:PackmanUpdate|   Update all/specified plugins (parallel, shows per-plugin result)
 |:PackmanClean|    Remove plugins not in g:packman_plugins
 |:PackmanStatus|   Show plugin state (installed/outdated/missing)
 |:PackmanLock|     Generate/update lockfile with current commit hashes
