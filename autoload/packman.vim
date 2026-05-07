@@ -10,6 +10,7 @@ g:packman_lock = {}
 
 var check_results: list<dict<any>> = []
 var check_pending = 0
+var update_results: list<dict<any>> = []
 
 # --------------------------------------------
 # Job callbacks (must be global for job_start to access)
@@ -185,27 +186,65 @@ export def PackmanUpdate(plugins: list<string> = g:packman_plugins): void
     return
   endif
 
+  update_results = []
   for repo in to_update
     var path = packman#plugin#PluginPath(repo)
-    var cmd = 'git -C ' .. shellescape(path) .. ' pull --ff-only'
     packman#notify#Notify('updating ' .. repo)
     g:packman_pending_jobs += 1
 
-    job_start(cmd, {
-      exit_cb: function('packman#JobExit'),
+    var idx = update_results->len()
+    update_results->add({repo: repo, status: -1, output: ''})
+    var lcl_idx = idx
+
+    job_start(['git', '-C', path, 'pull', '--ff-only'], {
+      exit_cb: (j: job, status: number) => UpdateJobDone(lcl_idx, j, status),
+      out_cb: (ch: channel, data: string) => CaptureUpdateOutput(lcl_idx, ch, data),
+      err_cb: (ch: channel, data: string) => CaptureUpdateOutput(lcl_idx, ch, data),
       in_io: 'null',
-      out_io: 'null',
-      err_io: 'null',
     })
   endfor
-
-  timer_start(100, function('packman#UpdateLockfile'))
 enddef
 
-export def UpdateLockfile(timer: number): void
+def CaptureUpdateOutput(idx: number, channel: channel, data: string): void
+  update_results[idx].output ..= data
+enddef
+
+def UpdateJobDone(idx: number, job: job, status: number): void
+  update_results[idx].status = status
+  g:packman_pending_jobs -= 1
+
   if g:packman_pending_jobs > 0
-    timer_start(100, function('packman#UpdateLockfile'))
     return
+  endif
+
+  g:packman_pending_jobs = 0
+
+  var successes: list<string> = []
+  var failures: list<string> = []
+  for r in update_results
+    if r.status == 0
+      successes->add(r.repo)
+    else
+      failures->add(r.repo)
+    endif
+  endfor
+
+  if !empty(successes)
+    packman#notify#Notify('Updated:')
+    for repo in successes
+      packman#notify#Notify('  ✓ ' .. repo)
+    endfor
+  endif
+
+  if !empty(failures)
+    packman#notify#Notify('Failed:')
+    for repo in failures
+      packman#notify#Notify('  ✗ ' .. repo)
+    endfor
+  endif
+
+  if empty(successes) && empty(failures)
+    packman#notify#Notify('nothing to update')
   endif
 
   var updated: dict<string> = {}
@@ -226,8 +265,9 @@ export def UpdateLockfile(timer: number): void
 
   if !empty(g:packman_lock)
     packman#lockfile#LockfileWrite()
-    packman#notify#Notify('lockfile updated')
   endif
+
+  Reinit()
 enddef
 
 # --------------------------------------------
