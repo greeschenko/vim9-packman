@@ -320,9 +320,9 @@ export def PackmanStatus(): void
 
     if isdirectory(path)
       status = 'installed'
-      commit = packman#lockfile#GetCommitHash(repo)[0:7]
+      commit = packman#lockfile#GetCommitHash(repo)[0 : 7]
       if g:packman_lock->has_key(repo)
-        var pinned = g:packman_lock[repo][0:7]
+        var pinned = g:packman_lock[repo][0 : 7]
         if pinned != commit
           status = 'outdated'
         endif
