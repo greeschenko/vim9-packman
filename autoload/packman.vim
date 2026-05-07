@@ -8,6 +8,9 @@ vim9script
 g:packman_pending_jobs = 0
 g:packman_lock = {}
 
+var check_results: list<dict<any>> = []
+var check_pending = 0
+
 # --------------------------------------------
 # Job callbacks (must be global for job_start to access)
 # --------------------------------------------
@@ -205,15 +208,26 @@ export def UpdateLockfile(timer: number): void
     return
   endif
 
+  var updated: dict<string> = {}
   for repo in g:packman_plugins
     var hash = packman#lockfile#GetCommitHash(repo)
     if !empty(hash)
-      g:packman_lock[repo] = hash
+      updated[repo] = hash
     endif
   endfor
 
-  packman#lockfile#LockfileWrite()
-  packman#notify#Notify('lockfile updated')
+  for [repo, hash] in items(g:packman_lock)
+    if !updated->has_key(repo)
+      updated[repo] = hash
+    endif
+  endfor
+
+  g:packman_lock = updated
+
+  if !empty(g:packman_lock)
+    packman#lockfile#LockfileWrite()
+    packman#notify#Notify('lockfile updated')
+  endif
 enddef
 
 # --------------------------------------------
@@ -295,4 +309,86 @@ export def PackmanLock(): void
 
   packman#lockfile#LockfileWrite()
   packman#notify#Notify('lockfile written to ' .. g:packman_lockfile)
+enddef
+
+# --------------------------------------------
+# Check for remote updates (async)
+# --------------------------------------------
+
+export def PackmanCheckUpdates(): void
+  if check_pending > 0
+    return
+  endif
+
+  packman#git#CheckGit()
+  packman#lockfile#LockfileRead()
+
+  check_results = []
+  check_pending = 0
+
+  for repo in g:packman_plugins
+    var path = packman#plugin#PluginPath(repo)
+    if !isdirectory(path)
+      continue
+    endif
+
+    var local = system('git -C ' .. shellescape(path) .. ' rev-parse HEAD 2>/dev/null')->trim()
+    if empty(local)
+      continue
+    endif
+
+    check_pending += 1
+    var idx = check_results->len()
+    check_results->add({repo: repo, local: local})
+
+    var lcl_idx = idx
+    job_start(['git', '-C', path, 'ls-remote', 'origin', 'HEAD'], {
+      out_cb: (ch: channel, data: string) => CaptureRemote(lcl_idx, ch, data),
+      exit_cb: (j: job, status: number) => CheckRemoteDone(lcl_idx, j, status),
+      err_io: 'null',
+    })
+  endfor
+
+  if check_pending == 0
+    packman#notify#Notify('no plugins to check')
+  endif
+enddef
+
+def CaptureRemote(idx: number, channel: channel, data: string): void
+  var trimmed = data->trim()
+  if !empty(trimmed)
+    var parts = trimmed->split('\t')
+    if parts->len() >= 1
+      check_results[idx].remote = parts[0]
+    endif
+  endif
+enddef
+
+def CheckRemoteDone(idx: number, job: job, status: number): void
+  check_pending -= 1
+
+  if check_pending > 0
+    return
+  endif
+
+  var outdated: list<string> = []
+  for r in check_results
+    if r->has_key('remote') && !empty(r.remote)
+      if r.local[ : 7] != r.remote[ : 7]
+        outdated->add(r.repo)
+      endif
+    endif
+  endfor
+
+  if !empty(outdated)
+    packman#notify#Notify('Updates available:')
+    packman#notify#Notify('')
+    for repo in outdated
+      packman#notify#Notify('  -> ' .. repo)
+    endfor
+  else
+    packman#notify#Notify('all plugins up to date')
+  endif
+
+  check_results = []
 enddef

@@ -32,3 +32,13 @@ command! -nargs=* -bar PackmanUpdate call packman#PackmanUpdate(<f-args>)
 command! -nargs=0 -bar PackmanClean call packman#PackmanClean()
 command! -nargs=0 -bar PackmanStatus call packman#PackmanStatus()
 command! -nargs=0 -bar PackmanLock call packman#PackmanLock()
+command! -nargs=0 -bar PackmanCheckUpdates call packman#PackmanCheckUpdates()
+
+# --------------------------------------------
+# Auto-check for updates 60s after startup
+# --------------------------------------------
+
+augroup packman
+  au!
+  au VimEnter * timer_start(60000, (_) => packman#PackmanCheckUpdates())
+augroup END

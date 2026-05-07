@@ -4,7 +4,11 @@ vim9script
 
 def LockfileReadLocal(): void
   if filereadable(g:packman_lockfile)
-    execute 'source ' .. shellescape(g:packman_lockfile)
+    try
+      execute 'source ' .. shellescape(g:packman_lockfile)
+    catch
+      g:packman_lock = {}
+    endtry
   endif
 enddef
 
